@@ -19,7 +19,7 @@ export class StudyGroupService {
         const { name, meetingType, meetingLocation, meetingDays, major, userId } = createStudyGroupDto;
         
         // Create the new study group and automatically add the creator as a member
-        const studyGroup = new this.studyGroup({
+        const studyGroup = await this.studyGroup.create({
             name,
             meetingType,
             meetingLocation,

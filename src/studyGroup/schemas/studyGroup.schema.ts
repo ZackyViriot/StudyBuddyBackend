@@ -11,8 +11,8 @@ export class StudyGroup extends Document {
         //could be online or in person or both
         meetingType:string;
 
-        @Prop()
-        meetingDays:string;
+        @Prop([String])
+        meetingDays:string[];
 
         @Prop()
         meetingLocation:string;

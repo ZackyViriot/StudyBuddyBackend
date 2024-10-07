@@ -1,4 +1,5 @@
-import {IsString,IsNotEmpty,IsOptional,IsUrl} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, ArrayNotEmpty, ArrayMinSize } from 'class-validator';
+
 
 
 export class CreateStudyGroupDto {
@@ -11,9 +12,11 @@ export class CreateStudyGroupDto {
     meetingType:string;
 
 
-    @IsString()
-    @IsNotEmpty()
-    meetingDays:string
+    @IsArray()
+    @ArrayNotEmpty()
+    @ArrayMinSize(1)
+    @IsString({ each: true }) // Validate each item in the array as a string
+    meetingDays: string[];
 
     @IsString()
     @IsNotEmpty()
