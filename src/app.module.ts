@@ -6,6 +6,7 @@ import { AuthModule } from "./auth/auth.module";
 import { ConfigModule } from "@nestjs/config";
 import { UserModule } from "./user/user.module";
 import { StudyGroupModule } from "./studyGroup/studyGroup.module";
+import { ChatModule } from "./chat/chat.module";
 
 
 @Module({
@@ -13,7 +14,7 @@ import { StudyGroupModule } from "./studyGroup/studyGroup.module";
     envFilePath: '.env',
     isGlobal: true,
   })
-    , MongooseModule.forRoot('mongodb+srv://zackyviriot987:Zana1954!@studybuddycluster.tdu86.mongodb.net/?retryWrites=true&w=majority&appName=StudyBuddyCluster'), AuthModule,UserModule,StudyGroupModule],
+    , MongooseModule.forRoot('mongodb+srv://zackyviriot987:Zana1954!@studybuddycluster.tdu86.mongodb.net/?retryWrites=true&w=majority&appName=StudyBuddyCluster'), AuthModule,UserModule,StudyGroupModule,ChatModule],
   controllers: [AppController],
   providers: [AppService]
 })

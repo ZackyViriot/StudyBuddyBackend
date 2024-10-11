@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable,NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import {Model} from 'mongoose';
+import {Model,Types} from 'mongoose';
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { CreateStudyGroupDto } from "./dto/createStudyGroup.dto";
@@ -75,4 +75,36 @@ export class StudyGroupService {
         await this.studyGroup.findByIdAndDelete(id).exec();
         return {message: "study group deleted successfully."}
     }
+
+
+    //join group using memeber ids
+
+    async joinGroup(id: string, userId: string): Promise<StudyGroup> {
+        const studyGroup = await this.studyGroup.findById(id).exec();
+
+        if (!studyGroup) {
+            throw new NotFoundException("Study group not found");
+        }
+
+        const userObjectId = new Types.ObjectId(userId);
+
+        if (!studyGroup.members.some(memberId => memberId.equals(userObjectId))) {
+            studyGroup.members.push(userObjectId);
+            await studyGroup.save();
+        }
+
+        return studyGroup;
+    }
+
+    async getUserStudyGroups(userId: string): Promise<StudyGroup[]> {
+        const objectId = new Types.ObjectId(userId);
+        return this.studyGroup.find({
+            $or: [
+                { userId: userId },  // Groups created by the user
+                { members: objectId }  // Groups where the user is a member
+            ]
+        }).exec();
+    }
+
+
 }
