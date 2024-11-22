@@ -8,7 +8,7 @@ async function bootstrap() {
   // Enable CORS for the specific frontend domain
   app.enableCors({
     origin: [
-      'https://studybuddy-production-1dcc.up.railway.app/',
+      'https://https://study-buddy-eta.vercel.app/',
       'http://localhost:3000'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
