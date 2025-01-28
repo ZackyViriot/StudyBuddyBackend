@@ -27,8 +27,8 @@ export class UsersService {
 
         // Initialize all user fields, even optional ones
         const newUser = new this.userModel({
-            firstName: createUserDto.firstname,
-            lastName: createUserDto.lastname,
+            firstname: createUserDto.firstname,
+            lastname: createUserDto.lastname,
             email: createUserDto.email,
             password: hashedPassword,
             username: '', // Initialize optional fields with empty values

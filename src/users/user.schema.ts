@@ -9,10 +9,10 @@ export enum UserRole {
 @Schema()
 export class User {
     @Prop({ required: true })
-    firstName: string;
+    firstname: string;
 
     @Prop({ required: true })
-    lastName: string;
+    lastname: string;
 
     @Prop({ default: '' })
     username: string;
