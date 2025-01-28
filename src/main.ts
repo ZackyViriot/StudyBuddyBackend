@@ -12,9 +12,13 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://study-buddy-frontend-zeta.vercel.app'
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 3600,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
   
   // Configure JSON body parser to accept larger payloads
