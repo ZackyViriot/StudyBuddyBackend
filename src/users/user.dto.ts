@@ -22,11 +22,11 @@ export class CreateUserDto {
 export class UpdateUserDto {
     @IsOptional()
     @IsString()
-    firstName?: string;
+    firstname?: string;
 
     @IsOptional()
     @IsString()
-    lastName?: string;
+    lastname?: string;
 
     @IsOptional()
     @IsString()
