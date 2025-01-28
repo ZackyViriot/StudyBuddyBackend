@@ -8,7 +8,10 @@ async function bootstrap() {
   
   // Enable CORS with specific origins
   app.enableCors({
-    origin: true, // Allow all origins in development
+    origin: [
+      'https://study-buddy-frontend-zeta.vercel.app',
+      'http://localhost:3000'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
