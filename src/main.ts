@@ -10,7 +10,9 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'https://study-buddy-frontend-zeta.vercel.app',
-      'http://localhost:3000'
+      'http://study-buddy-frontend-zeta.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:8000'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
