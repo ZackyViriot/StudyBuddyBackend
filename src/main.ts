@@ -6,15 +6,21 @@ import { json } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS for the specific frontend domain
+  // Enable CORS with more comprehensive configuration
   app.enableCors({
     origin: [
       'https://study-buddy-frontend-zeta.vercel.app',
       'http://localhost:3000'
     ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization'
+    ]
   });
 
   // Configure JSON body parser to accept larger payloads
@@ -27,8 +33,8 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-      whitelist: false, // Allow unknown properties
-      forbidNonWhitelisted: false, // Don't throw errors for unknown properties
+      whitelist: false,
+      forbidNonWhitelisted: false,
       enableDebugMessages: true,
     }),
   );

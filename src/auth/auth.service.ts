@@ -49,10 +49,17 @@ export class AuthService {
         return {
             access_token: this.jwtService.sign(payload),
             user: {
-                id: user._id.toString(),
+                _id: user._id.toString(),
                 email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName
+                firstname: user.firstname,
+                lastname: user.lastname,
+                school: user.school,
+                major: user.major,
+                year: user.year,
+                bio: user.bio,
+                studyPreferences: user.studyPreferences,
+                availability: user.availability,
+                profilePicture: user.profilePicture
             }
         };
     }

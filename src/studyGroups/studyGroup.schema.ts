@@ -19,6 +19,9 @@ export class StudyGroup {
    @Prop({ required: true })
    name: string;
 
+   @Prop({ required: true })
+   description: string;
+
    @Prop({ required: true, enum: ['online', 'in-person', 'hybrid'] })
    meetingType: string;
 
@@ -36,6 +39,9 @@ export class StudyGroup {
 
    @Prop({ required: true })
    meetingLocation: string;
+
+   @Prop({ required: true })
+   meetingTime: string;
 
    @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
    createdBy: Types.ObjectId;

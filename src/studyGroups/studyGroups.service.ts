@@ -1,40 +1,32 @@
-import {Injectable,ConflictException,NotFoundException} from '@nestjs/common';
+import {Injectable,ConflictException,NotFoundException,BadRequestException} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { StudyGroup,StudyGroupDocument } from './studyGroup.schema';
+import { StudyGroup,StudyGroupDocument,MemberRole } from './studyGroup.schema';
 import { CreateStudyGroupDto } from './dto/createStudyGroup.dto';
 import { User } from '../users/user.schema';
-import { MemberRole } from './studyGroup.schema';
 
 @Injectable()
 export class StudyGroupsService {
     constructor(
-        @InjectModel(StudyGroup.name) private studyGroupModel: Model<StudyGroup>,
+        @InjectModel(StudyGroup.name) private studyGroupModel: Model<StudyGroupDocument>,
         @InjectModel(User.name) private userModel: Model<User>
     ){}
 
 
     //create a study group 
-    async create(createStudyGroupDto: CreateStudyGroupDto){
+    async create(createStudyGroupDto: CreateStudyGroupDto): Promise<StudyGroup> {
         const existingStudyGroup = await this.studyGroupModel.findOne({name:createStudyGroupDto.name});
         if(existingStudyGroup){
             throw new ConflictException('Study group with this name already exists');
         }
 
-        // Set up initial members array with creator as admin
-        const members = [{
+        const createdGroup = new this.studyGroupModel(createStudyGroupDto);
+        // Add creator as admin member
+        createdGroup.members = [{
             userId: new Types.ObjectId(createStudyGroupDto.createdBy),
-            role: 'admin' as const
+            role: 'admin' as MemberRole
         }];
-
-        const newStudyGroupData = {
-            ...createStudyGroupDto,
-            createdBy: new Types.ObjectId(createStudyGroupDto.createdBy),
-            members
-        };
-
-        const newStudyGroup = new this.studyGroupModel(newStudyGroupData);
-        const savedGroup = await newStudyGroup.save();
+        const savedGroup = await createdGroup.save();
 
         // Add study group to creator's studyGroups
         await this.userModel.findByIdAndUpdate(
@@ -51,122 +43,162 @@ export class StudyGroupsService {
 
     //function to delete a study group 
     async delete(id:string){
-        const studyGroup = await this.studyGroupModel.findById(id);
-        if(!studyGroup){
+        if (!Types.ObjectId.isValid(id)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+
+        const result = await this.studyGroupModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
+        if (result.deletedCount === 0) {
             throw new NotFoundException('Study group not found');
         }
-        
-        // Remove the study group from all members' studyGroups arrays
-        await this.userModel.updateMany(
-            { studyGroups: new Types.ObjectId(id) },
-            { $pull: { studyGroups: new Types.ObjectId(id) } }
-        );
-
-        return this.studyGroupModel.findByIdAndDelete(id);
     }
 
     //function find all for a study group page 
     async findAll(): Promise<StudyGroup[]> {
-        return this.studyGroupModel.find().populate('members createdBy').exec();
+        return this.studyGroupModel.find()
+            .populate('createdBy', 'firstname lastname email')
+            .populate('members.userId', 'firstname lastname email')
+            .exec();
     }
 
     async findByName(name:string){
         return await this.studyGroupModel.findOne({name}).populate('members createdBy');
     }
 
-    async findById(id:string){
-        return await this.studyGroupModel.findById(id).populate('members createdBy');
+    async findOne(id: string): Promise<StudyGroup> {
+        if (!Types.ObjectId.isValid(id)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+        const group = await this.studyGroupModel.findById(id)
+            .populate('createdBy', 'firstname lastname email')
+            .populate('members.userId', 'firstname lastname email')
+            .exec();
+        if (!group) {
+            throw new NotFoundException('Study group not found');
+        }
+        return group;
     }
 
     async getUserStudyGroups(userId: string): Promise<StudyGroup[]> {
-        const objectId = new Types.ObjectId(userId);
         return this.studyGroupModel.find({
-            $or: [
-                { createdBy: objectId },
-                { members: objectId }
-            ]
-        }).populate('members createdBy').exec();
+            'members.userId': new Types.ObjectId(userId)
+        })
+        .populate('createdBy', 'firstname lastname email')
+        .populate('members.userId', 'firstname lastname email')
+        .exec();
     }
 
-    async addUserToStudyGroup(groupId: string, userId: string) {
-        const studyGroup = await this.studyGroupModel.findById(groupId);
-        if (!studyGroup) {
+    async update(id: string, updateData: Partial<StudyGroup>): Promise<StudyGroup> {
+        if (!Types.ObjectId.isValid(id)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+
+        // Remove fields that shouldn't be updated directly
+        delete updateData.members;
+        delete updateData.createdBy;
+
+        const updatedGroup = await this.studyGroupModel
+            .findByIdAndUpdate(id, updateData, { new: true })
+            .populate('createdBy', 'firstname lastname email')
+            .populate('members.userId', 'firstname lastname email')
+            .exec();
+
+        if (!updatedGroup) {
             throw new NotFoundException('Study group not found');
         }
 
-        const existingMember = studyGroup.members.find(member => member.userId.toString() === userId);
-        if (existingMember) {
-            throw new ConflictException('User is already a member of this study group');
+        return updatedGroup;
+    }
+
+    async addUserToStudyGroup(groupId: string, userId: string): Promise<StudyGroup> {
+        if (!Types.ObjectId.isValid(groupId)) {
+            throw new BadRequestException('Invalid study group ID');
         }
 
-        // Add user as a regular member
-        studyGroup.members.push({
+        const group = await this.studyGroupModel.findById(groupId);
+        if (!group) {
+            throw new NotFoundException('Study group not found');
+        }
+
+        // Check if user is already a member
+        const isMember = group.members.some(member => member.userId.toString() === userId);
+        if (isMember) {
+            throw new BadRequestException('User is already a member of this group');
+        }
+
+        // Add user as regular member
+        group.members.push({
             userId: new Types.ObjectId(userId),
-            role: 'member' as const
+            role: 'member' as MemberRole
         });
 
-        await studyGroup.save();
+        const savedGroup = await group.save();
 
         // Add study group to user's studyGroups
         await this.userModel.findByIdAndUpdate(
             userId,
-            { $push: { studyGroups: groupId } }
+            { $push: { studyGroups: group._id } }
         );
 
-        return studyGroup.populate({
+        return savedGroup.populate({
             path: 'members.userId createdBy',
             select: 'firstname lastname email'
         });
     }
 
-    async updateMemberRole(groupId: string, userId: string, newRole: MemberRole) {
-        const studyGroup = await this.studyGroupModel.findById(groupId);
-        if (!studyGroup) {
+    async removeUserFromStudyGroup(groupId: string, userId: string): Promise<StudyGroup> {
+        if (!Types.ObjectId.isValid(groupId)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+
+        const group = await this.studyGroupModel.findById(groupId);
+        if (!group) {
             throw new NotFoundException('Study group not found');
         }
 
-        const memberIndex = studyGroup.members.findIndex(member => member.userId.toString() === userId);
-        if (memberIndex === -1) {
-            throw new NotFoundException('User is not a member of this study group');
+        // Check if user is the creator
+        if (group.createdBy.toString() === userId) {
+            throw new BadRequestException('Creator cannot leave the group');
         }
 
-        // Don't allow changing the role of the creator (first admin)
-        if (studyGroup.createdBy.toString() === userId && newRole !== 'admin') {
-            throw new ConflictException('Cannot change the role of the group creator');
-        }
-
-        studyGroup.members[memberIndex].role = newRole;
-        await studyGroup.save();
-
-        return studyGroup.populate({
-            path: 'members.userId createdBy',
-            select: 'firstname lastname email'
-        });
-    }
-
-    async removeUserFromStudyGroup(studyGroupId: string, userId: string) {
-        const studyGroup = await this.studyGroupModel.findById(studyGroupId);
-        if (!studyGroup) {
-            throw new NotFoundException('Study group not found');
-        }
-
-        const userObjectId = new Types.ObjectId(userId);
-        if (!studyGroup.members.some(member => member.userId.toString() === userId)) {
-            throw new NotFoundException('User is not a member of this study group');
-        }
-
-        // Remove user from study group
-        await this.studyGroupModel.findByIdAndUpdate(
-            studyGroupId,
-            { $pull: { members: userObjectId } }
-        );
+        // Remove user from members
+        group.members = group.members.filter(member => member.userId.toString() !== userId);
+        const savedGroup = await group.save();
 
         // Remove study group from user's study groups
         await this.userModel.findByIdAndUpdate(
             userId,
-            { $pull: { studyGroups: new Types.ObjectId(studyGroupId) } }
+            { $pull: { studyGroups: new Types.ObjectId(groupId) } }
         );
 
-        return this.studyGroupModel.findById(studyGroupId).populate('members createdBy');
+        return savedGroup.populate({
+            path: 'members.userId createdBy',
+            select: 'firstname lastname email'
+        });
+    }
+
+    async updateMemberRole(groupId: string, userId: string, newRole: MemberRole): Promise<StudyGroup> {
+        if (!Types.ObjectId.isValid(groupId)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+
+        const group = await this.studyGroupModel.findById(groupId);
+        if (!group) {
+            throw new NotFoundException('Study group not found');
+        }
+
+        // Find and update member's role
+        const memberIndex = group.members.findIndex(member => member.userId.toString() === userId);
+        if (memberIndex === -1) {
+            throw new NotFoundException('User is not a member of this group');
+        }
+
+        group.members[memberIndex].role = newRole;
+        const savedGroup = await group.save();
+
+        return savedGroup.populate({
+            path: 'members.userId createdBy',
+            select: 'firstname lastname email'
+        });
     }
 }

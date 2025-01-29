@@ -7,6 +7,10 @@ export class CreateStudyGroupDto {
   @IsNotEmpty()
   name: string;
 
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
   @IsEnum(['online', 'in-person', 'hybrid'])
   meetingType: string;
 
@@ -17,6 +21,10 @@ export class CreateStudyGroupDto {
   @IsString()
   @IsNotEmpty()
   meetingLocation: string;
+
+  @IsString()
+  @IsNotEmpty()
+  meetingTime: string;
 
   @IsOptional()
   createdBy?: string;

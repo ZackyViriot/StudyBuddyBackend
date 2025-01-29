@@ -1,38 +1,114 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Put, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { StudyGroupsService } from './studyGroups.service';
 import { CreateStudyGroupDto } from './dto/createStudyGroup.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MemberRole } from './studyGroup.schema';
 
-@Controller('studyGroups')
+@Controller('api/studyGroups')
 @UseGuards(JwtAuthGuard)
 export class StudyGroupsController {
     constructor(private readonly studyGroupsService: StudyGroupsService) {}
 
     @Post()
     async create(@Body() createStudyGroupDto: CreateStudyGroupDto, @Request() req) {
-        createStudyGroupDto.createdBy = req.user.userId;
-        return this.studyGroupsService.create(createStudyGroupDto);
+        try {
+            createStudyGroupDto.createdBy = req.user.userId;
+            return await this.studyGroupsService.create(createStudyGroupDto);
+        } catch (error) {
+            throw error;
+        }
     }
 
     @Get()
-    async findAll() {
-        return this.studyGroupsService.findAll();
+    async findAll(@Request() req) {
+        try {
+            return await this.studyGroupsService.findAll();
+        } catch (error) {
+            throw error;
+        }
     }
 
     @Get('myGroups')
     async getUserStudyGroups(@Request() req) {
-        return this.studyGroupsService.getUserStudyGroups(req.user.userId);
+        try {
+            return await this.studyGroupsService.getUserStudyGroups(req.user.userId);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Get(':id')
+    async findOne(@Param('id') id: string) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+            return group;
+        } catch (error) {
+            throw error;
+        }
     }
 
     @Post(':id/join')
     async joinStudyGroup(@Param('id') id: string, @Request() req) {
-        return this.studyGroupsService.addUserToStudyGroup(id, req.user.userId);
+        try {
+            return await this.studyGroupsService.addUserToStudyGroup(id, req.user.userId);
+        } catch (error) {
+            throw error;
+        }
     }
 
     @Delete(':id/leave')
     async leaveStudyGroup(@Param('id') id: string, @Request() req) {
-        return this.studyGroupsService.removeUserFromStudyGroup(id, req.user.userId);
+        try {
+            return await this.studyGroupsService.removeUserFromStudyGroup(id, req.user.userId);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Put(':id')
+    async update(@Param('id') id: string, @Body() updateData: any, @Request() req) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            // Check if user is admin or creator
+            const isAdmin = group.members.some(member => 
+                member.userId.toString() === req.user.userId && member.role === 'admin'
+            );
+            const isCreator = group.createdBy.toString() === req.user.userId;
+
+            if (!isAdmin && !isCreator) {
+                throw new ForbiddenException('You do not have permission to update this group');
+            }
+
+            return await this.studyGroupsService.update(id, updateData);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Delete(':id')
+    async delete(@Param('id') id: string, @Request() req) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            // Only creator can delete the group
+            if (group.createdBy.toString() !== req.user.userId) {
+                throw new ForbiddenException('Only the creator can delete the group');
+            }
+
+            return await this.studyGroupsService.delete(id);
+        } catch (error) {
+            throw error;
+        }
     }
 
     @Put(':id/members/:userId/role')
@@ -42,13 +118,25 @@ export class StudyGroupsController {
         @Body('role') role: MemberRole,
         @Request() req
     ) {
-        // TODO: Add authorization check to ensure only admins can update roles
-        return this.studyGroupsService.updateMemberRole(id, userId, role);
-    }
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
 
-    @Delete(':id')
-    async delete(@Param('id') id: string, @Request() req) {
-        // TODO: Add authorization check to ensure only admins can delete groups
-        return this.studyGroupsService.delete(id);
+            // Check if user is admin or creator
+            const isAdmin = group.members.some(member => 
+                member.userId.toString() === req.user.userId && member.role === 'admin'
+            );
+            const isCreator = group.createdBy.toString() === req.user.userId;
+
+            if (!isAdmin && !isCreator) {
+                throw new ForbiddenException('You do not have permission to update member roles');
+            }
+
+            return await this.studyGroupsService.updateMemberRole(id, userId, role);
+        } catch (error) {
+            throw error;
+        }
     }
 } 

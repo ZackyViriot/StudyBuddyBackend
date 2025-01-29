@@ -8,24 +8,37 @@ export class AuthController {
 
     @Post('login')
     async login(@Body() loginUserDto: LoginUserDto) {
-        return this.authService.login(loginUserDto);
+        try {
+            const result = await this.authService.login(loginUserDto);
+            return result;
+        } catch (error) {
+            throw error;
+        }
     }
 
     @Post('logout')
     async logout(@Headers('authorization') auth: string) {
-        if (!auth) {
-            throw new UnauthorizedException('No token provided');
+        try {
+            if (!auth) {
+                throw new UnauthorizedException('No token provided');
+            }
+            const token = auth.split(' ')[1]; // Remove 'Bearer ' prefix
+            return await this.authService.logout(token);
+        } catch (error) {
+            throw error;
         }
-        const token = auth.split(' ')[1]; // Remove 'Bearer ' prefix
-        return this.authService.logout(token);
     }
 
     @Post('refresh')
     async refreshToken(@Headers('authorization') auth: string) {
-        if (!auth) {
-            throw new UnauthorizedException('No token provided');
+        try {
+            if (!auth) {
+                throw new UnauthorizedException('No token provided');
+            }
+            const token = auth.split(' ')[1]; // Remove 'Bearer ' prefix
+            return await this.authService.refreshToken(token);
+        } catch (error) {
+            throw error;
         }
-        const token = auth.split(' ')[1]; // Remove 'Bearer ' prefix
-        return this.authService.refreshToken(token);
     }
 }
