@@ -6,16 +6,24 @@ import { json } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Configure CORS
+  // Configure CORS with more comprehensive settings
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://study-buddy-frontend-zeta.vercel.app',
-      'https://study-buddy-frontend.vercel.app'
+    origin: true, // Allow all origins in development - you can change this to specific domains in production
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'Access-Control-Allow-Origin',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Allow-Methods',
+      'Access-Control-Allow-Credentials'
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
   // Configure JSON body parser to accept larger payloads
