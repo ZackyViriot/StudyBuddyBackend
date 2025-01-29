@@ -9,13 +9,13 @@ async function bootstrap() {
       logger: ['error', 'warn', 'log', 'debug', 'verbose']
     });
     
-    // Configure CORS - More permissive for troubleshooting
+    // Configure CORS for production
     app.enableCors({
-      origin: '*', // Temporarily allow all origins
+      origin: ['https://study-buddy-frontend-zeta.vercel.app'],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: '*', // Allow all headers
-      exposedHeaders: 'Authorization',
-      credentials: false
+      allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+      exposedHeaders: ['Authorization'],
+      credentials: true
     });
 
     // Remove any global prefix
