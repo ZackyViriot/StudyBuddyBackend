@@ -10,8 +10,27 @@ async function bootstrap() {
     });
     
     // Configure CORS for production
+    const allowedOrigins = [
+      'https://study-buddy-frontend-zeta.vercel.app',  // Production frontend
+      'http://localhost:3000',                         // Local development frontend
+      process.env.FRONTEND_URL,                        // Dynamic frontend URL
+    ].filter(Boolean); // Remove any undefined values
+
     app.enableCors({
-      origin: ['https://study-buddy-frontend-zeta.vercel.app'],
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`Blocked request from unauthorized origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
       exposedHeaders: ['Authorization'],
