@@ -6,21 +6,16 @@ import { json } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS with more comprehensive configuration
+  // Configure CORS
   app.enableCors({
     origin: [
+      'http://localhost:3000',
       'https://study-buddy-frontend-zeta.vercel.app',
-      'http://localhost:3000'
+      'https://study-buddy-frontend.vercel.app'
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Authorization'
-    ]
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Configure JSON body parser to accept larger payloads
@@ -39,7 +34,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 8000;
+  const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`Application is running on port ${port}`);
 }
