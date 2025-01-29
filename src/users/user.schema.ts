@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
+import { Types } from "mongoose";
+import { StudyGroup } from "../studyGroups/studyGroup.schema";
 
 export enum UserRole {
     USER = 'user',
@@ -49,6 +51,9 @@ export class User {
 
     @Prop({ type: [String], default: [] })
     blacklistedTokens: string[];
+
+    @Prop({ type: [{ type: Types.ObjectId, ref: 'StudyGroup' }], default: [] })
+    studyGroups: Types.ObjectId[];
 }
 
 export type UserDocument = HydratedDocument<User>;
