@@ -4,27 +4,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { json } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: false });
   
-  // Configure CORS with more comprehensive settings
+  // Configure CORS with explicit origins
   app.enableCors({
-    origin: true, // Allow all origins in development - you can change this to specific domains in production
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Authorization',
-      'Access-Control-Allow-Origin',
-      'Access-Control-Allow-Headers',
-      'Access-Control-Allow-Methods',
-      'Access-Control-Allow-Credentials'
-    ],
+    origin: ['https://study-buddy-frontend-zeta.vercel.app', 'http://localhost:3000'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
     credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    maxAge: 3600,
   });
+
+  // Remove prefix to match frontend requests
+  app.setGlobalPrefix('');
 
   // Configure JSON body parser to accept larger payloads
   app.use(json({ limit: '5mb' }));
