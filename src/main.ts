@@ -11,7 +11,8 @@ async function bootstrap() {
     
     // Configure CORS for production
     const allowedOrigins = [
-      'https://study-buddy-frontend-zeta.vercel.app',    // Production frontend
+      'https://study-buddy-frontend-zeta.vercel.app', 
+      'https://study-buddy-frontend-zeta.vercel.app/',
       'http://localhost:3000',                           // Local development frontend
     ];
 
