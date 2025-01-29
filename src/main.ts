@@ -4,39 +4,42 @@ import { ValidationPipe } from '@nestjs/common';
 import { json } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: false });
+  const app = await NestFactory.create(AppModule);
   
-  // Configure CORS with explicit origins
+  // Configure CORS
   app.enableCors({
-    origin: ['https://study-buddy-frontend-zeta.vercel.app', 'http://localhost:3000'],
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    credentials: true,
-    maxAge: 3600,
+    origin: [
+      'https://study-buddy-frontend-zeta.vercel.app',
+      'https://study-buddy-frontend.vercel.app',
+      'http://localhost:3000'
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
+    credentials: false,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
-  // Remove prefix to match frontend requests
-  app.setGlobalPrefix('');
+  // Configure JSON body parser
+  app.use(json({ limit: '50mb' }));
 
-  // Configure JSON body parser to accept larger payloads
-  app.use(json({ limit: '5mb' }));
-
-  // Use global validation pipe with transformation enabled
+  // Use global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-      whitelist: false,
-      forbidNonWhitelisted: false,
-      enableDebugMessages: true,
+      whitelist: true,
     }),
   );
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
+  const port = process.env.PORT || 8000;
+  await app.listen(port, '0.0.0.0');
   console.log(`Application is running on port ${port}`);
 }
+
 bootstrap();
