@@ -19,7 +19,14 @@ async function bootstrap() {
     ];
 
     app.enableCors({
-      origin: allowedOrigins,
+      origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          console.warn('Blocked by CORS:', origin);
+          callback(null, false);
+        }
+      },
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Access-Control-Allow-Credentials'],
