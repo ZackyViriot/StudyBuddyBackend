@@ -1,77 +1,32 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { json } from 'express';
 
 async function bootstrap() {
-  try {
-    const app = await NestFactory.create(AppModule, { 
-      logger: ['error', 'warn', 'log', 'debug', 'verbose']
-    });
-    
-    // Configure CORS for production
-    const allowedOrigins = [
-      'https://study-buddy-frontend-zeta.vercel.app',    // Production frontend
-      'https://study-buddy-frontend-zeta.vercel.app/',   // Production frontend with trailing slash
-      'https://studybuddybackend-production.up.railway.app', // Production backend
-      'http://localhost:3000',                           // Local development frontend
-      'http://localhost:8000'                            // Local development backend
-    ];
+  const app = await NestFactory.create(AppModule);
+  
+  // Enable CORS for the specific frontend domain
+  app.enableCors({
+    origin: [
+      'https://studdybuddy-frontend.vercel.app',
+      'http://localhost:3000'
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+  });
 
-    app.enableCors({
-      origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-          callback(null, true);
-        } else {
-          console.warn('Blocked by CORS:', origin);
-          callback(null, false);
-        }
+  // Use global validation pipe with transformation enabled
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
       },
-      credentials: true,
-      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Access-Control-Allow-Credentials'],
-      exposedHeaders: ['Authorization'],
-      preflightContinue: false,
-      optionsSuccessStatus: 204,
-      maxAge: 3600 // Cache preflight request results for 1 hour
-    });
+    }),
+  );
 
-    // Remove any global prefix
-    app.setGlobalPrefix('');
-
-    // Configure JSON body parser with increased limits
-    app.use(json({ limit: '50mb' }));
-
-    // Use global validation pipe with more permissive settings
-    app.useGlobalPipes(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: false,
-        disableErrorMessages: false,
-      }),
-    );
-
-    // Get port from environment with fallback
-    const port = process.env.PORT || 8000;
-    
-    // Listen on all network interfaces
-    await app.listen(port, '0.0.0.0');
-    
-    const serverUrl = await app.getUrl();
-    console.log(`Application is running on: ${serverUrl}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
-    console.log(`CORS configuration:`, {
-      allowedOrigins,
-      environment: process.env.NODE_ENV || 'production'
-    });
-  } catch (error) {
-    console.error('Failed to start the application:', error);
-    process.exit(1);
-  }
+  await app.listen(8000);
+  console.log('Application is running on port 8000');
 }
-
-bootstrap().catch((err) => {
-  console.error('Unhandled bootstrap error:', err);
-  process.exit(1);
-});
+bootstrap();
