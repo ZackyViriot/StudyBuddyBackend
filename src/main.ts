@@ -22,10 +22,11 @@ async function bootstrap() {
       origin: allowedOrigins,
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Access-Control-Allow-Credentials'],
       exposedHeaders: ['Authorization'],
       preflightContinue: false,
-      optionsSuccessStatus: 204
+      optionsSuccessStatus: 204,
+      maxAge: 3600 // Cache preflight request results for 1 hour
     });
 
     // Remove any global prefix
@@ -52,8 +53,11 @@ async function bootstrap() {
     
     const serverUrl = await app.getUrl();
     console.log(`Application is running on: ${serverUrl}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`CORS enabled for all origins (temporary)`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+    console.log(`CORS configuration:`, {
+      allowedOrigins,
+      environment: process.env.NODE_ENV || 'production'
+    });
   } catch (error) {
     console.error('Failed to start the application:', error);
     process.exit(1);
