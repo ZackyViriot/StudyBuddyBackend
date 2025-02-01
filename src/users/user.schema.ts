@@ -46,6 +46,9 @@ export class User {
     @Prop({ default: '' })
     availability: string;
 
+    @Prop({ default: '' })
+    subjects: string;
+
     @Prop({ default: UserRole.USER })
     role: UserRole;
 

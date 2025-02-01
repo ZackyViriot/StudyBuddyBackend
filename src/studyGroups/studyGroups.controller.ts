@@ -100,9 +100,23 @@ export class StudyGroupsController {
                 throw new NotFoundException('Study group not found');
             }
 
-            // Only creator can delete the group
-            if (group.createdBy.toString() !== req.user.userId) {
-                throw new ForbiddenException('Only the creator can delete the group');
+            // Check if user is an admin of the group
+            const isAdmin = group.members.some(member => {
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId && member.role === 'admin';
+            });
+
+            console.log('Backend Delete Authorization Debug:', {
+                requestUserId: req.user.userId,
+                isAdmin,
+                members: group.members.map(m => ({
+                    userId: m.userId._id ? m.userId._id.toString() : m.userId.toString(),
+                    role: m.role
+                }))
+            });
+
+            if (!isAdmin) {
+                throw new ForbiddenException('Only admins can delete the group');
             }
 
             return await this.studyGroupsService.delete(id);

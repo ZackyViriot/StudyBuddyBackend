@@ -56,13 +56,15 @@ export class StudyGroupsService {
     //function find all for a study group page 
     async findAll(): Promise<StudyGroup[]> {
         return this.studyGroupModel.find()
-            .populate('createdBy', 'firstname lastname email')
-            .populate('members.userId', 'firstname lastname email')
+            .populate('createdBy', 'firstname lastname email profilePicture')
+            .populate('members.userId', 'firstname lastname email profilePicture')
             .exec();
     }
 
     async findByName(name:string){
-        return await this.studyGroupModel.findOne({name}).populate('members createdBy');
+        return await this.studyGroupModel.findOne({name})
+            .populate('createdBy', 'firstname lastname email profilePicture')
+            .populate('members.userId', 'firstname lastname email profilePicture');
     }
 
     async findOne(id: string): Promise<StudyGroup> {
@@ -70,8 +72,8 @@ export class StudyGroupsService {
             throw new BadRequestException('Invalid study group ID');
         }
         const group = await this.studyGroupModel.findById(id)
-            .populate('createdBy', 'firstname lastname email')
-            .populate('members.userId', 'firstname lastname email')
+            .populate('createdBy', 'firstname lastname email profilePicture')
+            .populate('members.userId', 'firstname lastname email profilePicture')
             .exec();
         if (!group) {
             throw new NotFoundException('Study group not found');
@@ -83,8 +85,8 @@ export class StudyGroupsService {
         return this.studyGroupModel.find({
             'members.userId': new Types.ObjectId(userId)
         })
-        .populate('createdBy', 'firstname lastname email')
-        .populate('members.userId', 'firstname lastname email')
+        .populate('createdBy', 'firstname lastname email profilePicture')
+        .populate('members.userId', 'firstname lastname email profilePicture')
         .exec();
     }
 
@@ -142,7 +144,7 @@ export class StudyGroupsService {
 
         return savedGroup.populate({
             path: 'members.userId createdBy',
-            select: 'firstname lastname email'
+            select: 'firstname lastname email profilePicture'
         });
     }
 
@@ -173,7 +175,7 @@ export class StudyGroupsService {
 
         return savedGroup.populate({
             path: 'members.userId createdBy',
-            select: 'firstname lastname email'
+            select: 'firstname lastname email profilePicture'
         });
     }
 
@@ -198,7 +200,7 @@ export class StudyGroupsService {
 
         return savedGroup.populate({
             path: 'members.userId createdBy',
-            select: 'firstname lastname email'
+            select: 'firstname lastname email profilePicture'
         });
     }
 }

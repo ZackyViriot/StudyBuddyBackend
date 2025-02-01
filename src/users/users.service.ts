@@ -50,8 +50,48 @@ export class UsersService {
         return await this.userModel.findOne({ email });
     }
 
-    async findById(id: string) {
-        return await this.userModel.findById(id);
+    async findById(id: string, includeAuth: boolean = false) {
+        const user = await this.userModel.findById(id);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (includeAuth) {
+            // Return full user data for auth purposes
+            return user;
+        }
+
+        // Return formatted profile data for frontend
+        const response: any = {
+            _id: user._id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            role: user.role
+        };
+
+        // Add optional fields only if they have values
+        if (user.username) response.username = user.username;
+        if (user.profilePicture) response.profilePicture = user.profilePicture;
+        if (user.bio) response.bio = user.bio;
+        if (user.major) response.major = user.major;
+        if (user.school) response.school = user.school;
+        if (user.year) response.year = user.year;
+
+        // Add preferences only if any of the fields have values
+        const studyPreferences = user.studyPreferences ? user.studyPreferences.split(',').map(p => p.trim()).filter(Boolean) : [];
+        const subjects = user.subjects ? user.subjects.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const availability = user.availability ? user.availability.split(',').map(a => a.trim()).filter(Boolean) : [];
+
+        if (studyPreferences.length > 0 || subjects.length > 0 || availability.length > 0) {
+            response.preferences = {
+                studyPreferences,
+                subjects,
+                availability
+            };
+        }
+
+        return response;
     }
 
     async updateUser(id: string, updateData: Partial<User>) {
