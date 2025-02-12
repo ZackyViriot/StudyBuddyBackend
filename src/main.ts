@@ -12,10 +12,15 @@ async function bootstrap() {
       'https://study-buddy-frontend-zeta.vercel.app',
       'http://localhost:3000'
     ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    exposedHeaders: ['Set-Cookie'],
+    maxAge: 86400, // 24 hours in seconds
   });
+
+  // Set global prefix for all routes
+  app.setGlobalPrefix('api');
 
   // Use global validation pipe with transformation enabled
   app.useGlobalPipes(
