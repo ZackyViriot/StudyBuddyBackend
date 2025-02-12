@@ -8,6 +8,7 @@ async function bootstrap() {
   // Enable CORS for the specific frontend domain
   app.enableCors({
     origin: [
+      'https://study-buddy-frontend-git-main-zackyviriots-projects.vercel.app',
       'https://study-buddy-frontend-zeta.vercel.app',
       'http://localhost:3000'
     ],
