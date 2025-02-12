@@ -16,18 +16,23 @@ export interface Member {
 
 //define interface for team such as goals and task 
 export interface TeamGoal {
-    title:string;
-    description?:string;
-    targetDate:Date;
-    status:'active' | 'achieved'
+    _id?: Types.ObjectId;
+    title: string;
+    description?: string;
+    targetDate: Date;
+    status: 'active' | 'achieved';
+    progress?: number;
 }
 
 export interface TeamTask {
-    title:string;
-    description?:string;
-    dueDate:Date;
-    status:'pending' | 'in-progress' | 'completed';
-    assignedTo:Types.ObjectId;
+    _id?: Types.ObjectId;
+    title: string;
+    description?: string;
+    dueDate: Date;
+    status: 'pending' | 'in_progress' | 'completed';
+    assignedTo: Types.ObjectId;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 
@@ -56,8 +61,8 @@ export class Team {
                 enum: ['active','achieved'],
                 default: 'active',
                 required:true
-            }
-
+            },
+            progress: {type:Number, default: 0, min: 0, max: 100}
         }],
         default:[]
     })
@@ -70,11 +75,13 @@ export class Team {
             dueDate: { type: Date, required: true },
             status: { 
                 type: String, 
-                enum: ['pending', 'in-progress', 'completed'],
+                enum: ['pending', 'in_progress', 'completed'],
                 default: 'pending',
                 required: true 
             },
-            assignedTo: { type: Types.ObjectId, ref: 'User', required: true }
+            assignedTo: { type: Types.ObjectId, ref: 'User', required: true },
+            createdAt: { type: Date, default: Date.now },
+            updatedAt: { type: Date }
         }],
         default: []
     })
@@ -83,6 +90,9 @@ export class Team {
     //the team will also have its own chat 
     @Prop({type:Types.ObjectId,ref: 'chat'})
     chatId?:Types.ObjectId;
+
+    @Prop({ required: true, unique: true })
+    joinCode: string;
 }
 
 export const TeamSchema = SchemaFactory.createForClass(Team);

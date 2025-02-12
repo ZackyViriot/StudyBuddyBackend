@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, Patch } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/createTeam.dto';
 import { Team } from './team.schema';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JoinTeamDto } from './dto/joinTeam.dto';
 
 import { MemberRole } from './team.schema';
 
@@ -77,12 +78,38 @@ export class TeamsController {
         return this.teamsService.addGoal(teamId, goal);
     }
 
+    @Patch(':teamId/goals/:goalId')
+    async updateGoal(
+        @Param('teamId') teamId: string,
+        @Param('goalId') goalId: string,
+        @Body() updateData: any
+    ): Promise<Team> {
+        return this.teamsService.updateGoal(teamId, goalId, updateData);
+    }
+
     @Post(':teamId/tasks')
     async addTask(
         @Param('teamId') teamId: string,
         @Body() task: any
     ): Promise<Team> {
         return this.teamsService.addTask(teamId, task);
+    }
+
+    @Patch(':teamId/tasks/:taskId')
+    async updateTask(
+        @Param('teamId') teamId: string,
+        @Param('taskId') taskId: string,
+        @Body() updateData: any
+    ): Promise<Team> {
+        return this.teamsService.updateTask(teamId, taskId, updateData);
+    }
+
+    @Post('join')
+    async joinByCode(@Body() joinTeamDto: JoinTeamDto): Promise<Team> {
+        return this.teamsService.joinByCode(
+            joinTeamDto.joinCode,
+            new Types.ObjectId(joinTeamDto.userId.toString())
+        );
     }
 
     @Delete(':id')

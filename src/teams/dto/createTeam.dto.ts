@@ -69,6 +69,10 @@ export class CreateTeamDto {
     @IsNotEmpty()
     createdBy: Types.ObjectId;
 
+    @IsString()
+    @IsNotEmpty()
+    joinCode: string;
+
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateGoalDto)

@@ -56,6 +56,7 @@ export class TeamsService {
         const team = await this.teamModel.findById(id)
             .populate('members.userId', 'firstname lastname email profilePicture')
             .populate('createdBy', 'firstname lastname email profilePicture')
+            .populate('tasks.assignedTo', 'firstname lastname email profilePicture')
             .exec();
         if (!team) {
             throw new NotFoundException(`Team with ID ${id} not found`);
@@ -69,6 +70,7 @@ export class TeamsService {
         })
         .populate('members.userId', 'firstname lastname email profilePicture')
         .populate('createdBy', 'firstname lastname email profilePicture')
+        .populate('tasks.assignedTo', 'firstname lastname email profilePicture')
         .exec();
     }
 
@@ -132,6 +134,37 @@ export class TeamsService {
         return team.save();
     }
 
+    async updateGoal(teamId: string, goalId: string, updateData: any): Promise<Team> {
+        const team = await this.teamModel.findById(teamId);
+        if (!team) {
+            throw new NotFoundException(`Team with ID ${teamId} not found`);
+        }
+
+        const goalIndex = team.goals.findIndex(g => g._id && g._id.toString() === goalId);
+        if (goalIndex === -1) {
+            throw new NotFoundException(`Goal with ID ${goalId} not found`);
+        }
+
+        // Ensure progress is a number between 0 and 100
+        if (updateData.progress !== undefined) {
+            updateData.progress = Math.min(Math.max(Number(updateData.progress), 0), 100);
+            team.goals[goalIndex].progress = updateData.progress;
+            team.goals[goalIndex].status = updateData.progress === 100 ? 'achieved' : 'active';
+        }
+
+        // Update other goal fields if provided
+        if (updateData.title) team.goals[goalIndex].title = updateData.title;
+        if (updateData.description) team.goals[goalIndex].description = updateData.description;
+        if (updateData.targetDate) team.goals[goalIndex].targetDate = updateData.targetDate;
+        if (updateData.status) team.goals[goalIndex].status = updateData.status;
+
+        const updatedTeam = await team.save();
+        return updatedTeam.populate([
+            { path: 'members.userId', select: 'firstname lastname email profilePicture' },
+            { path: 'createdBy', select: 'firstname lastname email profilePicture' }
+        ]);
+    }
+
     async addTask(teamId: string, task: any): Promise<Team> {
         const team = await this.teamModel.findById(teamId);
         if (!team) {
@@ -142,11 +175,85 @@ export class TeamsService {
         return team.save();
     }
 
+    async updateTask(teamId: string, taskId: string, updateData: any): Promise<Team> {
+        const team = await this.teamModel.findById(teamId);
+        if (!team) {
+            throw new NotFoundException(`Team with ID ${teamId} not found`);
+        }
+
+        const taskIndex = team.tasks.findIndex(t => t._id && t._id.toString() === taskId);
+        if (taskIndex === -1) {
+            throw new NotFoundException(`Task with ID ${taskId} not found`);
+        }
+
+        // Update task fields
+        if (updateData.status) {
+            team.tasks[taskIndex].status = updateData.status;
+        }
+        if (updateData.title) {
+            team.tasks[taskIndex].title = updateData.title;
+        }
+        if (updateData.description) {
+            team.tasks[taskIndex].description = updateData.description;
+        }
+        if (updateData.dueDate) {
+            team.tasks[taskIndex].dueDate = updateData.dueDate;
+        }
+        if (updateData.assignedTo) {
+            team.tasks[taskIndex].assignedTo = updateData.assignedTo;
+        }
+
+        // Use findOneAndUpdate to ensure atomic operation
+        const updatedTeam = await this.teamModel.findOneAndUpdate(
+            { _id: teamId },
+            { $set: { tasks: team.tasks } },
+            { new: true }
+        ).populate([
+            { path: 'members.userId', select: 'firstname lastname email profilePicture' },
+            { path: 'createdBy', select: 'firstname lastname email profilePicture' },
+            { path: 'tasks.assignedTo', select: 'firstname lastname email profilePicture', model: 'User' }
+        ]);
+
+        if (!updatedTeam) {
+            throw new NotFoundException(`Team with ID ${teamId} not found after update`);
+        }
+
+        return updatedTeam;
+    }
+
     async delete(id: string): Promise<Team> {
         const team = await this.teamModel.findByIdAndDelete(id);
         if (!team) {
             throw new NotFoundException(`Team with ID ${id} not found`);
         }
         return team;
+    }
+
+    async joinByCode(joinCode: string, userId: Types.ObjectId): Promise<Team> {
+        const team = await this.teamModel.findOne({ joinCode });
+        if (!team) {
+            throw new NotFoundException('Team not found with this join code');
+        }
+
+        // Check if user is already a member
+        const isMember = team.members.some(member => 
+            member.userId.toString() === userId.toString()
+        ) || team.createdBy.toString() === userId.toString();
+
+        if (isMember) {
+            throw new BadRequestException('User is already a member of this team');
+        }
+
+        // Add user as a member
+        team.members.push({
+            userId,
+            role: 'member' as MemberRole
+        });
+
+        const savedTeam = await team.save();
+        return savedTeam.populate([
+            { path: 'members.userId', select: 'firstname lastname email profilePicture' },
+            { path: 'createdBy', select: 'firstname lastname email profilePicture' }
+        ]);
     }
 } 
