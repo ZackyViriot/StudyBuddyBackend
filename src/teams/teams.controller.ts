@@ -8,7 +8,7 @@ import { JoinTeamDto } from './dto/joinTeam.dto';
 
 import { MemberRole } from './team.schema';
 
-@Controller('api/teams')
+@Controller('teams')
 @UseGuards(JwtAuthGuard)
 export class TeamsController {
     constructor(private readonly teamsService: TeamsService) {}

@@ -4,7 +4,7 @@ import { CreateStudyGroupDto } from './dto/createStudyGroup.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MemberRole } from './studyGroup.schema';
 
-@Controller('api/studyGroups')
+@Controller('studyGroups')
 @UseGuards(JwtAuthGuard)
 export class StudyGroupsController {
     constructor(private readonly studyGroupsService: StudyGroupsService) {}
