@@ -5,7 +5,7 @@ import { User } from './user.schema';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Types } from 'mongoose';
 
-@Controller('api/users')
+@Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 
