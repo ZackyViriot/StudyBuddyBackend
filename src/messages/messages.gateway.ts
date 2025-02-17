@@ -17,7 +17,11 @@ import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:3000', 'https://study-buddy-frontend-git-main-zackyviriots-projects.vercel.app'],
+    origin: [
+      'http://localhost:3000',
+      'https://study-buddy-frontend-git-main-zackyviriots-projects.vercel.app',
+      'https://study-buddy-frontend-zeta.vercel.app'
+    ],
     credentials: true,
   },
   namespace: '/',
