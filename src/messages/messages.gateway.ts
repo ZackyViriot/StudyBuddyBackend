@@ -23,11 +23,19 @@ import { ConfigService } from '@nestjs/config';
       'https://study-buddy-frontend-zeta.vercel.app'
     ],
     credentials: true,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
   },
   namespace: '/',
   transports: ['websocket', 'polling'],
   allowEIO3: true,
   path: '/socket.io/',
+  serveClient: false,
+  cookie: {
+    name: 'io',
+    httpOnly: true,
+    sameSite: 'strict',
+  }
 })
 export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
@@ -46,6 +54,10 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       console.log('New socket connection attempt', {
         headers: client.handshake.headers,
         query: client.handshake.query,
+        address: client.handshake.address,
+        url: client.handshake.url,
+        auth: client.handshake.auth,
+        time: new Date().toISOString()
       });
 
       const token = client.handshake.auth?.token || 
@@ -71,7 +83,11 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       client.emit('connected', { userId: payload.sub });
       return true;
     } catch (error) {
-      console.error('Socket authentication failed:', error.message);
+      console.error('Socket authentication failed:', {
+        error: error.message,
+        stack: error.stack,
+        time: new Date().toISOString()
+      });
       client.emit('error', { message: 'Authentication failed' });
       client.disconnect();
       return false;
