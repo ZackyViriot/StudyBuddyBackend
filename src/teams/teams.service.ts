@@ -171,8 +171,36 @@ export class TeamsService {
             throw new NotFoundException(`Team with ID ${teamId} not found`);
         }
 
-        team.tasks.push(task);
-        return team.save();
+        // Ensure proper date handling
+        const newTask = {
+            ...task,
+            dueDate: new Date(task.dueDate),
+            status: task.status || 'pending',
+            createdAt: new Date(),
+            assignedTo: new Types.ObjectId(task.assignedTo)
+        };
+
+        team.tasks.push(newTask);
+        
+        // Save and populate the team
+        const updatedTeam = await this.teamModel.findByIdAndUpdate(
+            teamId,
+            { $push: { tasks: newTask } },
+            { 
+                new: true,
+                populate: [
+                    { path: 'members.userId', select: 'firstname lastname email profilePicture' },
+                    { path: 'createdBy', select: 'firstname lastname email profilePicture' },
+                    { path: 'tasks.assignedTo', select: 'firstname lastname email profilePicture' }
+                ]
+            }
+        );
+
+        if (!updatedTeam) {
+            throw new NotFoundException(`Team with ID ${teamId} not found after update`);
+        }
+
+        return updatedTeam;
     }
 
     async updateTask(teamId: string, taskId: string, updateData: any): Promise<Team> {
