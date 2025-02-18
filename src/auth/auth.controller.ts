@@ -2,6 +2,8 @@ import { Controller, Post, Body, UnauthorizedException, Headers } from '@nestjs/
 import { AuthService } from './auth.service';
 import { LoginUserDto } from '../users/user.dto';
 import { UserRole } from '../users/schemas/user.schema';
+import { CreateUserDto } from '../users/user.dto';
+import { UsersService } from '../users/users.service';
 
 export interface AuthResponse {
     access_token: string;
@@ -27,7 +29,16 @@ export interface AuthResponse {
 
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
+    constructor(
+        private readonly authService: AuthService,
+        private readonly usersService: UsersService
+    ) {}
+
+    @Post('signup')
+    async signup(@Body() createUserDto: CreateUserDto): Promise<AuthResponse> {
+        const user = await this.usersService.create(createUserDto);
+        return this.authService.login(user);
+    }
 
     @Post('login')
     async login(@Body() loginUserDto: LoginUserDto): Promise<AuthResponse> {
