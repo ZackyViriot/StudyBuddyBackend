@@ -3,6 +3,8 @@ import { StudyGroupsService } from './studyGroups.service';
 import { CreateStudyGroupDto } from './dto/createStudyGroup.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MemberRole } from './studyGroup.schema';
+import { CreateMeetingDto } from './dto/createMeeting.dto';
+import { Meeting } from './meeting.schema';
 
 @Controller('studyGroups')
 @UseGuards(JwtAuthGuard)
@@ -149,6 +151,158 @@ export class StudyGroupsController {
             }
 
             return await this.studyGroupsService.updateMemberRole(id, userId, role);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Post(':id/meetings')
+    async addMeeting(
+        @Param('id') id: string,
+        @Body() createMeetingDto: CreateMeetingDto,
+        @Request() req
+    ) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            // Check if user is a member of the group
+            const isMember = group.members.some(member => 
+                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
+            );
+            if (!isMember) {
+                throw new ForbiddenException('You must be a member of the group to add meetings');
+            }
+
+            createMeetingDto.createdBy = req.user.userId;
+            createMeetingDto.studyGroupId = id;
+            return await this.studyGroupsService.addMeeting(id, createMeetingDto);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Get(':id/meetings')
+    async getMeetings(@Param('id') id: string, @Request() req) {
+        try {
+            console.log('Getting meetings for group:', id, 'User:', req.user.userId);
+            const group = await this.studyGroupsService.findOne(id);
+            
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            console.log('Group members:', group.members.map(m => ({
+                userId: m.userId?._id?.toString() || m.userId?.toString(),
+                role: m.role
+            })));
+
+            const isMember = group.members.some(member => {
+                const memberId = member.userId?._id?.toString() || member.userId?.toString();
+                console.log('Checking member:', memberId, 'against user:', req.user.userId);
+                return memberId === req.user.userId;
+            });
+
+            if (!isMember) {
+                console.log('User is not a member of the group');
+                throw new UnauthorizedException('You must be a member of the group to view meetings');
+            }
+
+            console.log('User is a member, fetching meetings');
+            return await this.studyGroupsService.getMeetings(id);
+        } catch (error) {
+            console.error('Error in getMeetings:', error);
+            throw error;
+        }
+    }
+
+    @Get(':id/meetings/:meetingId')
+    async getMeeting(
+        @Param('id') id: string,
+        @Param('meetingId') meetingId: string,
+        @Request() req
+    ) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            // Check if user is a member of the group
+            const isMember = group.members.some(member => 
+                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
+            );
+            if (!isMember) {
+                throw new ForbiddenException('You must be a member of the group to view meetings');
+            }
+
+            return await this.studyGroupsService.getMeeting(id, meetingId);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Put(':id/meetings/:meetingId')
+    async updateMeeting(
+        @Param('id') id: string,
+        @Param('meetingId') meetingId: string,
+        @Body() updateData: Partial<Meeting>,
+        @Request() req
+    ) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            // Check if user is a member of the group
+            const isMember = group.members.some(member => 
+                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
+            );
+            if (!isMember) {
+                throw new ForbiddenException('You must be a member of the group to update meetings');
+            }
+
+            const meeting = await this.studyGroupsService.getMeeting(id, meetingId);
+            if (meeting.createdBy.toString() !== req.user.userId) {
+                throw new ForbiddenException('Only the meeting creator can update the meeting');
+            }
+
+            return await this.studyGroupsService.updateMeeting(id, meetingId, updateData);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Delete(':id/meetings/:meetingId')
+    async deleteMeeting(
+        @Param('id') id: string,
+        @Param('meetingId') meetingId: string,
+        @Request() req
+    ) {
+        try {
+            const group = await this.studyGroupsService.findOne(id);
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            // Check if user is a member of the group
+            const isMember = group.members.some(member => 
+                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
+            );
+            if (!isMember) {
+                throw new ForbiddenException('You must be a member of the group to delete meetings');
+            }
+
+            const meeting = await this.studyGroupsService.getMeeting(id, meetingId);
+            if (meeting.createdBy.toString() !== req.user.userId) {
+                throw new ForbiddenException('Only the meeting creator can delete the meeting');
+            }
+
+            await this.studyGroupsService.deleteMeeting(id, meetingId);
+            return { message: 'Meeting deleted successfully' };
         } catch (error) {
             throw error;
         }

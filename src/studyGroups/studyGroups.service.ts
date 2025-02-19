@@ -4,14 +4,16 @@ import { Model, Types } from 'mongoose';
 import { StudyGroup,StudyGroupDocument,MemberRole } from './studyGroup.schema';
 import { CreateStudyGroupDto } from './dto/createStudyGroup.dto';
 import { User } from '../users/user.schema';
+import { Meeting, MeetingDocument } from './meeting.schema';
+import { CreateMeetingDto } from './dto/createMeeting.dto';
 
 @Injectable()
 export class StudyGroupsService {
     constructor(
         @InjectModel(StudyGroup.name) private studyGroupModel: Model<StudyGroupDocument>,
-        @InjectModel(User.name) private userModel: Model<User>
-    ){}
-
+        @InjectModel(User.name) private userModel: Model<User>,
+        @InjectModel(Meeting.name) private meetingModel: Model<MeetingDocument>
+    ) {}
 
     //create a study group 
     async create(createStudyGroupDto: CreateStudyGroupDto): Promise<StudyGroup> {
@@ -71,14 +73,32 @@ export class StudyGroupsService {
         if (!Types.ObjectId.isValid(id)) {
             throw new BadRequestException('Invalid study group ID');
         }
-        const group = await this.studyGroupModel.findById(id)
-            .populate('createdBy', 'firstname lastname email profilePicture')
-            .populate('members.userId', 'firstname lastname email profilePicture')
-            .exec();
-        if (!group) {
-            throw new NotFoundException('Study group not found');
+
+        try {
+            console.log('Finding study group:', id);
+            const group = await this.studyGroupModel.findById(id)
+                .populate({
+                    path: 'members.userId',
+                    select: 'firstname lastname email profilePicture _id',
+                    model: 'User'
+                })
+                .populate('createdBy', 'firstname lastname email profilePicture')
+                .exec();
+
+            if (!group) {
+                throw new NotFoundException('Study group not found');
+            }
+
+            console.log('Found group members:', group.members.map(m => ({
+                userId: m.userId?._id?.toString(),
+                role: m.role
+            })));
+
+            return group;
+        } catch (error) {
+            console.error('Error in findOne:', error);
+            throw error;
         }
-        return group;
     }
 
     async getUserStudyGroups(userId: string): Promise<StudyGroup[]> {
@@ -202,5 +222,107 @@ export class StudyGroupsService {
             path: 'members.userId createdBy',
             select: 'firstname lastname email profilePicture'
         });
+    }
+
+    async addMeeting(groupId: string, createMeetingDto: CreateMeetingDto): Promise<Meeting> {
+        if (!Types.ObjectId.isValid(groupId)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+
+        const group = await this.studyGroupModel.findById(groupId);
+        if (!group) {
+            throw new NotFoundException('Study group not found');
+        }
+
+        const meeting = new this.meetingModel({
+            ...createMeetingDto,
+            studyGroupId: new Types.ObjectId(groupId),
+            createdBy: new Types.ObjectId(createMeetingDto.createdBy)
+        });
+
+        const savedMeeting = await meeting.save();
+        return savedMeeting.populate([
+            { path: 'createdBy', select: 'firstname lastname email profilePicture' },
+            { path: 'studyGroupId', select: 'name' }
+        ]);
+    }
+
+    async getMeetings(groupId: string): Promise<Meeting[]> {
+        if (!Types.ObjectId.isValid(groupId)) {
+            throw new BadRequestException('Invalid study group ID');
+        }
+
+        try {
+            const meetings = await this.meetingModel.find({ 
+                studyGroupId: new Types.ObjectId(groupId) 
+            })
+            .populate('createdBy', 'firstname lastname email profilePicture')
+            .populate('studyGroupId', 'name')
+            .sort({ date: 1, startTime: 1 })
+            .exec();
+
+            return meetings;
+        } catch (error) {
+            throw new BadRequestException('Error fetching meetings');
+        }
+    }
+
+    async getMeeting(groupId: string, meetingId: string): Promise<Meeting> {
+        if (!Types.ObjectId.isValid(groupId) || !Types.ObjectId.isValid(meetingId)) {
+            throw new BadRequestException('Invalid ID provided');
+        }
+
+        const meeting = await this.meetingModel.findOne({
+            _id: new Types.ObjectId(meetingId),
+            studyGroupId: new Types.ObjectId(groupId)
+        })
+        .populate('createdBy', 'firstname lastname email profilePicture')
+        .populate('studyGroupId', 'name')
+        .exec();
+
+        if (!meeting) {
+            throw new NotFoundException('Meeting not found');
+        }
+
+        return meeting;
+    }
+
+    async updateMeeting(groupId: string, meetingId: string, updateData: Partial<Meeting>): Promise<Meeting> {
+        if (!Types.ObjectId.isValid(groupId) || !Types.ObjectId.isValid(meetingId)) {
+            throw new BadRequestException('Invalid ID provided');
+        }
+
+        const meeting = await this.meetingModel.findOneAndUpdate(
+            {
+                _id: new Types.ObjectId(meetingId),
+                studyGroupId: new Types.ObjectId(groupId)
+            },
+            updateData,
+            { new: true }
+        )
+        .populate('createdBy', 'firstname lastname email profilePicture')
+        .populate('studyGroupId', 'name')
+        .exec();
+
+        if (!meeting) {
+            throw new NotFoundException('Meeting not found');
+        }
+
+        return meeting;
+    }
+
+    async deleteMeeting(groupId: string, meetingId: string): Promise<void> {
+        if (!Types.ObjectId.isValid(groupId) || !Types.ObjectId.isValid(meetingId)) {
+            throw new BadRequestException('Invalid ID provided');
+        }
+
+        const result = await this.meetingModel.deleteOne({
+            _id: new Types.ObjectId(meetingId),
+            studyGroupId: new Types.ObjectId(groupId)
+        });
+
+        if (result.deletedCount === 0) {
+            throw new NotFoundException('Meeting not found');
+        }
     }
 }
