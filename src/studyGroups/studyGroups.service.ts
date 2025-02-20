@@ -115,6 +115,21 @@ export class StudyGroupsService {
             throw new BadRequestException('Invalid study group ID');
         }
 
+        // Validate time format if provided
+        if (updateData.startTime) {
+            const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (!timeRegex.test(updateData.startTime)) {
+                throw new BadRequestException('Invalid start time format. Use HH:mm format');
+            }
+        }
+
+        if (updateData.endTime) {
+            const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (!timeRegex.test(updateData.endTime)) {
+                throw new BadRequestException('Invalid end time format. Use HH:mm format');
+            }
+        }
+
         // Remove fields that shouldn't be updated directly
         delete updateData.members;
         delete updateData.createdBy;

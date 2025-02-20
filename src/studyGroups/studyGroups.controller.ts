@@ -79,10 +79,17 @@ export class StudyGroupsController {
             }
 
             // Check if user is admin or creator
-            const isAdmin = group.members.some(member => 
-                member.userId.toString() === req.user.userId && member.role === 'admin'
-            );
-            const isCreator = group.createdBy.toString() === req.user.userId;
+            const isAdmin = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId && member.role === 'admin';
+            });
+
+            const isCreator = group.createdBy ? (
+                group.createdBy._id 
+                    ? group.createdBy._id.toString() === req.user.userId 
+                    : group.createdBy.toString() === req.user.userId
+            ) : false;
 
             if (!isAdmin && !isCreator) {
                 throw new ForbiddenException('You do not have permission to update this group');
@@ -90,6 +97,7 @@ export class StudyGroupsController {
 
             return await this.studyGroupsService.update(id, updateData);
         } catch (error) {
+            console.error('Error in update method:', error);
             throw error;
         }
     }
@@ -104,6 +112,7 @@ export class StudyGroupsController {
 
             // Check if user is an admin of the group
             const isAdmin = group.members.some(member => {
+                if (!member || !member.userId) return false;
                 const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
                 return memberId === req.user.userId && member.role === 'admin';
             });
@@ -112,7 +121,7 @@ export class StudyGroupsController {
                 requestUserId: req.user.userId,
                 isAdmin,
                 members: group.members.map(m => ({
-                    userId: m.userId._id ? m.userId._id.toString() : m.userId.toString(),
+                    userId: m.userId?._id ? m.userId._id.toString() : m.userId?.toString(),
                     role: m.role
                 }))
             });
@@ -123,6 +132,7 @@ export class StudyGroupsController {
 
             return await this.studyGroupsService.delete(id);
         } catch (error) {
+            console.error('Error in delete method:', error);
             throw error;
         }
     }
@@ -141,10 +151,17 @@ export class StudyGroupsController {
             }
 
             // Check if user is admin or creator
-            const isAdmin = group.members.some(member => 
-                member.userId.toString() === req.user.userId && member.role === 'admin'
-            );
-            const isCreator = group.createdBy.toString() === req.user.userId;
+            const isAdmin = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId && member.role === 'admin';
+            });
+
+            const isCreator = group.createdBy ? (
+                group.createdBy._id 
+                    ? group.createdBy._id.toString() === req.user.userId 
+                    : group.createdBy.toString() === req.user.userId
+            ) : false;
 
             if (!isAdmin && !isCreator) {
                 throw new ForbiddenException('You do not have permission to update member roles');
@@ -152,6 +169,7 @@ export class StudyGroupsController {
 
             return await this.studyGroupsService.updateMemberRole(id, userId, role);
         } catch (error) {
+            console.error('Error in updateMemberRole method:', error);
             throw error;
         }
     }
@@ -169,9 +187,12 @@ export class StudyGroupsController {
             }
 
             // Check if user is a member of the group
-            const isMember = group.members.some(member => 
-                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
-            );
+            const isMember = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId;
+            });
+
             if (!isMember) {
                 throw new ForbiddenException('You must be a member of the group to add meetings');
             }
@@ -180,6 +201,7 @@ export class StudyGroupsController {
             createMeetingDto.studyGroupId = id;
             return await this.studyGroupsService.addMeeting(id, createMeetingDto);
         } catch (error) {
+            console.error('Error in addMeeting method:', error);
             throw error;
         }
     }

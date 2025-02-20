@@ -24,7 +24,11 @@ export class CreateStudyGroupDto {
 
   @IsString()
   @IsNotEmpty()
-  meetingTime: string;
+  startTime: string;
+
+  @IsString()
+  @IsNotEmpty()
+  endTime: string;
 
   @IsOptional()
   createdBy?: string;

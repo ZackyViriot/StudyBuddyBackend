@@ -6,7 +6,7 @@ export class UpdateStudyGroupDto {
   name?: string;
 
   @IsOptional()
-  @IsEnum(['In-Person', 'Online', 'Hybrid'])
+  @IsEnum(['online', 'in-person', 'hybrid'])
   meetingType?: string;
 
   @IsOptional()
@@ -17,6 +17,14 @@ export class UpdateStudyGroupDto {
   @IsOptional()
   @IsString()
   meetingLocation?: string;
+
+  @IsOptional()
+  @IsString()
+  startTime?: string;
+
+  @IsOptional()
+  @IsString()
+  endTime?: string;
 
   @IsOptional()
   @IsString()

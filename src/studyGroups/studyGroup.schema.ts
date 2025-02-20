@@ -41,7 +41,10 @@ export class StudyGroup {
    meetingLocation: string;
 
    @Prop({ required: true })
-   meetingTime: string;
+   startTime: string;
+
+   @Prop({ required: true })
+   endTime: string;
 
    @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
    createdBy: Types.ObjectId;
