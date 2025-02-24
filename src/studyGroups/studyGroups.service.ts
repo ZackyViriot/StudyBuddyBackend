@@ -102,8 +102,9 @@ export class StudyGroupsService {
     }
 
     async getUserStudyGroups(userId: string): Promise<StudyGroup[]> {
+        const userObjectId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
         return this.studyGroupModel.find({
-            'members.userId': new Types.ObjectId(userId)
+            'members.userId': userObjectId
         })
         .populate('createdBy', 'firstname lastname email profilePicture')
         .populate('members.userId', 'firstname lastname email profilePicture')
