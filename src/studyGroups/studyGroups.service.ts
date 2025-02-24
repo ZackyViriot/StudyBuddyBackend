@@ -1,4 +1,4 @@
-import {Injectable,ConflictException,NotFoundException,BadRequestException} from '@nestjs/common';
+import {Injectable,ConflictException,NotFoundException,BadRequestException,InternalServerErrorException} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { StudyGroup,StudyGroupDocument,MemberRole } from './studyGroup.schema';
@@ -148,39 +148,76 @@ export class StudyGroupsService {
     }
 
     async addUserToStudyGroup(groupId: string, userId: string): Promise<StudyGroup> {
-        if (!Types.ObjectId.isValid(groupId)) {
-            throw new BadRequestException('Invalid study group ID');
+        try {
+            console.log('Adding user to study group:', { groupId, userId });
+
+            if (!Types.ObjectId.isValid(groupId)) {
+                console.error('Invalid group ID format:', groupId);
+                throw new BadRequestException('Invalid study group ID');
+            }
+
+            if (!Types.ObjectId.isValid(userId)) {
+                console.error('Invalid user ID format:', userId);
+                throw new BadRequestException('Invalid user ID');
+            }
+
+            const group = await this.studyGroupModel.findById(groupId);
+            if (!group) {
+                console.error('Study group not found:', groupId);
+                throw new NotFoundException('Study group not found');
+            }
+
+            console.log('Found study group:', {
+                groupId: group._id,
+                name: group.name,
+                memberCount: group.members.length
+            });
+
+            // Check if user is already a member
+            const isMember = group.members.some(member => 
+                member.userId.toString() === userId
+            );
+            
+            if (isMember) {
+                console.error('User is already a member:', { userId, groupId });
+                throw new BadRequestException('User is already a member of this group');
+            }
+
+            // Add user as regular member
+            group.members.push({
+                userId: new Types.ObjectId(userId),
+                role: 'member' as MemberRole
+            });
+
+            console.log('Saving group with new member:', {
+                groupId: group._id,
+                newMemberId: userId,
+                totalMembers: group.members.length
+            });
+
+            const savedGroup = await group.save();
+
+            // Add study group to user's studyGroups
+            console.log('Updating user studyGroups array:', { userId, groupId });
+            await this.userModel.findByIdAndUpdate(
+                userId,
+                { $push: { studyGroups: group._id } }
+            );
+
+            console.log('Successfully added user to group');
+            return savedGroup.populate({
+                path: 'members.userId createdBy',
+                select: 'firstname lastname email profilePicture'
+            });
+        } catch (error) {
+            console.error('Error in addUserToStudyGroup:', error);
+            if (error instanceof BadRequestException || error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException(
+                'An error occurred while adding user to study group'
+            );
         }
-
-        const group = await this.studyGroupModel.findById(groupId);
-        if (!group) {
-            throw new NotFoundException('Study group not found');
-        }
-
-        // Check if user is already a member
-        const isMember = group.members.some(member => member.userId.toString() === userId);
-        if (isMember) {
-            throw new BadRequestException('User is already a member of this group');
-        }
-
-        // Add user as regular member
-        group.members.push({
-            userId: new Types.ObjectId(userId),
-            role: 'member' as MemberRole
-        });
-
-        const savedGroup = await group.save();
-
-        // Add study group to user's studyGroups
-        await this.userModel.findByIdAndUpdate(
-            userId,
-            { $push: { studyGroups: group._id } }
-        );
-
-        return savedGroup.populate({
-            path: 'members.userId createdBy',
-            select: 'firstname lastname email profilePicture'
-        });
     }
 
     async removeUserFromStudyGroup(groupId: string, userId: string): Promise<StudyGroup> {
