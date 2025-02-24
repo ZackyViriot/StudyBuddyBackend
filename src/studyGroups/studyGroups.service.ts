@@ -151,6 +151,11 @@ export class StudyGroupsService {
         try {
             console.log('Adding user to study group:', { groupId, userId });
 
+            if (!userId) {
+                console.error('No user ID provided');
+                throw new BadRequestException('No user ID provided');
+            }
+
             if (!Types.ObjectId.isValid(groupId)) {
                 console.error('Invalid group ID format:', groupId);
                 throw new BadRequestException('Invalid study group ID');
@@ -158,7 +163,14 @@ export class StudyGroupsService {
 
             if (!Types.ObjectId.isValid(userId)) {
                 console.error('Invalid user ID format:', userId);
-                throw new BadRequestException('Invalid user ID');
+                throw new BadRequestException('Invalid user ID format');
+            }
+
+            // Verify user exists
+            const user = await this.userModel.findById(userId);
+            if (!user) {
+                console.error('User not found:', userId);
+                throw new NotFoundException('User not found');
             }
 
             const group = await this.studyGroupModel.findById(groupId);
@@ -170,7 +182,8 @@ export class StudyGroupsService {
             console.log('Found study group:', {
                 groupId: group._id,
                 name: group.name,
-                memberCount: group.members.length
+                memberCount: group.members.length,
+                currentMembers: group.members.map(m => m.userId.toString())
             });
 
             // Check if user is already a member
