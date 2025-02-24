@@ -1,11 +1,29 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { HydratedDocument } from "mongoose";
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 import { StudyGroup } from "../studyGroups/studyGroup.schema";
 
 export enum UserRole {
     USER = 'user',
     ADMIN = 'admin'
+}
+
+export type UserDocument = Document & User;
+
+export interface UserEvent {
+  _id: Types.ObjectId;
+  title: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
+  type: 'homework' | 'study' | 'meeting' | 'other';
+}
+
+export interface UserTask {
+  _id: Types.ObjectId;
+  title: string;
+  description?: string;
+  dueDate: Date;
+  completed: boolean;
 }
 
 @Schema()
@@ -19,7 +37,7 @@ export class User {
     @Prop({ default: '' })
     username: string;
 
-    @Prop({ required: true })
+    @Prop({ required: true, unique: true })
     email: string;
 
     @Prop({ required: true })
@@ -55,10 +73,33 @@ export class User {
     @Prop({ type: [String], default: [] })
     blacklistedTokens: string[];
 
-    @Prop({ type: [{ type: Types.ObjectId, ref: 'StudyGroup' }], default: [] })
+    @Prop([{ type: Types.ObjectId, ref: 'Team' }])
+    teams: Types.ObjectId[];
+
+    @Prop([{ type: Types.ObjectId, ref: 'StudyGroup' }])
     studyGroups: Types.ObjectId[];
+
+    @Prop([{
+      type: {
+        title: String,
+        description: String,
+        startDate: Date,
+        endDate: Date,
+        type: { type: String, enum: ['homework', 'study', 'meeting', 'other'] }
+      }
+    }])
+    events: UserEvent[];
+
+    @Prop([{
+      type: {
+        title: String,
+        description: String,
+        dueDate: Date,
+        completed: Boolean
+      }
+    }])
+    tasks: UserTask[];
 }
 
-export type UserDocument = HydratedDocument<User>;
 export const UserSchema = SchemaFactory.createForClass(User);
 

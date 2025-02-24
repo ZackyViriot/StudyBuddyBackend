@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { StudyGroupsModule } from './studyGroups/studyGroups.module';
 import { TeamsModule } from './teams/teams.module';
 import { MessagesModule } from './messages/messages.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -25,7 +27,9 @@ import { MessagesModule } from './messages/messages.module';
     UsersModule,
     StudyGroupsModule,
     TeamsModule,
-    MessagesModule
+    MessagesModule,
+    DashboardModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

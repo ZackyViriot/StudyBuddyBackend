@@ -3,9 +3,9 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 // Mongoose-specific decorator for dependency injection
 import { InjectModel } from '@nestjs/mongoose';
 // Mongoose model type
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 // Your schema and DTOs
-import { User, UserRole } from './user.schema';
+import { User, UserRole, UserEvent } from './user.schema';
 import { CreateUserDto } from './user.dto';
 // Password hashing library
 import * as bcrypt from 'bcrypt';
@@ -125,5 +125,54 @@ export class UsersService {
 
         user.password = await bcrypt.hash(newPassword, 10);
         return await user.save();
+    }
+
+    async addEvent(userId: string, eventData: {
+        title: string;
+        description: string;
+        startDate: Date;
+        endDate: Date;
+        type: 'homework' | 'study' | 'meeting' | 'other';
+    }): Promise<User> {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const newEvent = {
+            _id: new Types.ObjectId(),
+            ...eventData
+        };
+
+        user.events = user.events || [];
+        user.events.push(newEvent);
+        await user.save();
+
+        return user;
+    }
+
+    async getUserEvents(userId: string): Promise<UserEvent[]> {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        return user.events || [];
+    }
+
+    async deleteEvent(userId: string, eventId: string): Promise<User> {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const eventIndex = user.events?.findIndex(event => event._id.toString() === eventId);
+        if (eventIndex === -1 || eventIndex === undefined) {
+            throw new NotFoundException('Event not found');
+        }
+
+        user.events.splice(eventIndex, 1);
+        await user.save();
+
+        return user;
     }
 }

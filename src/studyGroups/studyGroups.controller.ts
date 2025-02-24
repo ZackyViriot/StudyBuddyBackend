@@ -274,26 +274,69 @@ export class StudyGroupsController {
         @Request() req
     ) {
         try {
+            console.log('Starting update meeting process:', {
+                groupId: id,
+                meetingId: meetingId,
+                userId: req.user.userId
+            });
+
             const group = await this.studyGroupsService.findOne(id);
             if (!group) {
                 throw new NotFoundException('Study group not found');
             }
 
             // Check if user is a member of the group
-            const isMember = group.members.some(member => 
-                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
-            );
+            const isMember = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId;
+            });
+
+            console.log('Member check:', {
+                isMember,
+                groupMembers: group.members.map(m => ({
+                    memberId: m.userId?._id ? m.userId._id.toString() : m.userId?.toString(),
+                    role: m.role
+                }))
+            });
+
             if (!isMember) {
                 throw new ForbiddenException('You must be a member of the group to update meetings');
             }
 
             const meeting = await this.studyGroupsService.getMeeting(id, meetingId);
-            if (meeting.createdBy.toString() !== req.user.userId) {
-                throw new ForbiddenException('Only the meeting creator can update the meeting');
+            if (!meeting) {
+                throw new NotFoundException('Meeting not found');
+            }
+
+            // Check if user is the creator of the meeting or an admin
+            const isAdmin = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId && member.role === 'admin';
+            });
+
+            const meetingCreatorId = meeting.createdBy._id ? meeting.createdBy._id.toString() : meeting.createdBy.toString();
+            const isCreator = meetingCreatorId === req.user.userId;
+
+            console.log('Permission check details:', {
+                userId: req.user.userId,
+                meetingCreatorId,
+                rawMeetingCreator: meeting.createdBy,
+                isCreator,
+                isAdmin,
+                memberRoles: group.members
+                    .filter(m => m.userId?._id?.toString() === req.user.userId)
+                    .map(m => m.role)
+            });
+
+            if (!isCreator && !isAdmin) {
+                throw new ForbiddenException('Only the meeting creator or group admin can update the meeting');
             }
 
             return await this.studyGroupsService.updateMeeting(id, meetingId, updateData);
         } catch (error) {
+            console.error('Error in updateMeeting:', error);
             throw error;
         }
     }
@@ -305,27 +348,70 @@ export class StudyGroupsController {
         @Request() req
     ) {
         try {
+            console.log('Starting delete meeting process:', {
+                groupId: id,
+                meetingId: meetingId,
+                userId: req.user.userId
+            });
+
             const group = await this.studyGroupsService.findOne(id);
             if (!group) {
                 throw new NotFoundException('Study group not found');
             }
 
             // Check if user is a member of the group
-            const isMember = group.members.some(member => 
-                member.userId && member.userId._id && member.userId._id.toString() === req.user.userId
-            );
+            const isMember = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId;
+            });
+
+            console.log('Member check:', {
+                isMember,
+                groupMembers: group.members.map(m => ({
+                    memberId: m.userId?._id ? m.userId._id.toString() : m.userId?.toString(),
+                    role: m.role
+                }))
+            });
+
             if (!isMember) {
                 throw new ForbiddenException('You must be a member of the group to delete meetings');
             }
 
             const meeting = await this.studyGroupsService.getMeeting(id, meetingId);
-            if (meeting.createdBy.toString() !== req.user.userId) {
-                throw new ForbiddenException('Only the meeting creator can delete the meeting');
+            if (!meeting) {
+                throw new NotFoundException('Meeting not found');
+            }
+
+            // Check if user is the creator of the meeting or an admin
+            const isAdmin = group.members.some(member => {
+                if (!member || !member.userId) return false;
+                const memberId = member.userId._id ? member.userId._id.toString() : member.userId.toString();
+                return memberId === req.user.userId && member.role === 'admin';
+            });
+
+            const meetingCreatorId = meeting.createdBy._id ? meeting.createdBy._id.toString() : meeting.createdBy.toString();
+            const isCreator = meetingCreatorId === req.user.userId;
+
+            console.log('Permission check details:', {
+                userId: req.user.userId,
+                meetingCreatorId,
+                rawMeetingCreator: meeting.createdBy,
+                isCreator,
+                isAdmin,
+                memberRoles: group.members
+                    .filter(m => m.userId?._id?.toString() === req.user.userId)
+                    .map(m => m.role)
+            });
+
+            if (!isCreator && !isAdmin) {
+                throw new ForbiddenException('Only the meeting creator or group admin can delete the meeting');
             }
 
             await this.studyGroupsService.deleteMeeting(id, meetingId);
             return { message: 'Meeting deleted successfully' };
         } catch (error) {
+            console.error('Error in deleteMeeting:', error);
             throw error;
         }
     }

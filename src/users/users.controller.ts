@@ -103,4 +103,55 @@ export class UsersController {
             throw error;
         }
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Post(':id/events')
+    async addEvent(
+        @Param('id') userId: string,
+        @Body() eventData: {
+            title: string;
+            description: string;
+            startDate: Date;
+            endDate: Date;
+            type: 'homework' | 'study' | 'meeting' | 'other';
+        }
+    ) {
+        try {
+            if (!this.validateObjectId(userId)) {
+                throw new BadRequestException('Invalid user ID format');
+            }
+            return await this.usersService.addEvent(userId, eventData);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':id/events')
+    async getUserEvents(@Param('id') userId: string) {
+        try {
+            if (!this.validateObjectId(userId)) {
+                throw new BadRequestException('Invalid user ID format');
+            }
+            return await this.usersService.getUserEvents(userId);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete(':userId/events/:eventId')
+    async deleteEvent(
+        @Param('userId') userId: string,
+        @Param('eventId') eventId: string
+    ) {
+        try {
+            if (!this.validateObjectId(userId) || !this.validateObjectId(eventId)) {
+                throw new BadRequestException('Invalid ID format');
+            }
+            return await this.usersService.deleteEvent(userId, eventId);
+        } catch (error) {
+            throw error;
+        }
+    }
 } 
