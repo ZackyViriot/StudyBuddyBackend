@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Put, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { StudyGroupsService } from './studyGroups.service';
 import { CreateStudyGroupDto } from './dto/createStudyGroup.dto';
+import { JoinStudyGroupDto } from './dto/joinStudyGroup.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MemberRole } from './studyGroup.schema';
 import { CreateMeetingDto } from './dto/createMeeting.dto';
@@ -53,10 +54,20 @@ export class StudyGroupsController {
     }
 
     @Post(':id/join')
-    async joinStudyGroup(@Param('id') id: string, @Request() req) {
+    async joinStudyGroup(
+        @Param('id') id: string,
+        @Body() joinStudyGroupDto: JoinStudyGroupDto,
+        @Request() req
+    ) {
         try {
-            return await this.studyGroupsService.addUserToStudyGroup(id, req.user.userId);
+            // Verify that the user ID in the request matches the authenticated user
+            if (joinStudyGroupDto.userId !== req.user.userId) {
+                throw new UnauthorizedException('User ID mismatch');
+            }
+            
+            return await this.studyGroupsService.addUserToStudyGroup(id, joinStudyGroupDto.userId);
         } catch (error) {
+            console.error('Error in joinStudyGroup:', error);
             throw error;
         }
     }
