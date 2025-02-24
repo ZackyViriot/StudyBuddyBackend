@@ -126,8 +126,8 @@ export class StudyGroup {
    @Prop({ type: Types.ObjectId, ref: 'Chat' })
    chatId?: Types.ObjectId;
 
-   @Prop({ required: true, unique: true })
-   joinCode: string;
+   @Prop({ unique: true, default: () => Math.random().toString(36).substring(2, 8).toUpperCase() })
+   joinCode?: string;
 
    @Prop()
    subject: string;

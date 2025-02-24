@@ -197,18 +197,23 @@ export class StudyGroupsService {
             }
 
             // Add user as regular member
-            group.members.push({
-                userId: new Types.ObjectId(userId),
-                role: 'member' as MemberRole
-            });
+            const updatedGroup = await this.studyGroupModel.findByIdAndUpdate(
+                groupId,
+                {
+                    $push: {
+                        members: {
+                            userId: new Types.ObjectId(userId),
+                            role: 'member' as MemberRole
+                        }
+                    }
+                },
+                { new: true }
+            ).populate('members.userId', 'firstname lastname email profilePicture')
+             .populate('createdBy', 'firstname lastname email profilePicture');
 
-            console.log('Saving group with new member:', {
-                groupId: group._id,
-                newMemberId: userId,
-                totalMembers: group.members.length
-            });
-
-            const savedGroup = await group.save();
+            if (!updatedGroup) {
+                throw new NotFoundException('Failed to update study group');
+            }
 
             // Add study group to user's studyGroups
             console.log('Updating user studyGroups array:', { userId, groupId });
@@ -217,19 +222,10 @@ export class StudyGroupsService {
                 { $push: { studyGroups: group._id } }
             );
 
-            console.log('Successfully added user to group');
-            return savedGroup.populate({
-                path: 'members.userId createdBy',
-                select: 'firstname lastname email profilePicture'
-            });
+            return updatedGroup;
         } catch (error) {
             console.error('Error in addUserToStudyGroup:', error);
-            if (error instanceof BadRequestException || error instanceof NotFoundException) {
-                throw error;
-            }
-            throw new InternalServerErrorException(
-                'An error occurred while adding user to study group'
-            );
+            throw error;
         }
     }
 

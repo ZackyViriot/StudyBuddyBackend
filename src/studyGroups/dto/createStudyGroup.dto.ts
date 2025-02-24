@@ -30,8 +30,25 @@ export class CreateStudyGroupDto {
   @IsNotEmpty()
   endTime: string;
 
+  @IsString()
+  @IsNotEmpty()
+  createdBy: string;
+
   @IsOptional()
-  createdBy?: string;
+  @IsString()
+  joinCode?: string;
+
+  @IsOptional()
+  @IsString()
+  subject?: string;
+
+  @IsOptional()
+  @IsString()
+  course?: string;
+
+  @IsOptional()
+  @IsString()
+  institution?: string;
 
   @IsOptional()
   @IsArray()
