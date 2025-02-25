@@ -23,13 +23,15 @@ export class UsersService {
             throw new ConflictException('User with this email already exists');
         }
 
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+        // Use consistent salt rounds for password hashing
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(createUserDto.password, saltRounds);
 
         // Initialize all user fields, even optional ones
         const newUser = new this.userModel({
             firstname: createUserDto.firstname,
             lastname: createUserDto.lastname,
-            email: createUserDto.email,
+            email: createUserDto.email.toLowerCase(), // Store email in lowercase for consistent comparison
             password: hashedPassword,
             username: '', // Initialize optional fields with empty values
             bio: '',
@@ -47,7 +49,8 @@ export class UsersService {
     }
 
     async findByEmail(email: string) {
-        return await this.userModel.findOne({ email });
+        // Convert email to lowercase for consistent comparison
+        return await this.userModel.findOne({ email: email.toLowerCase() });
     }
 
     async findById(id: string, includeAuth: boolean = false) {
